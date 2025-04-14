@@ -98,7 +98,27 @@ pd.set_option('display.max_columns', None)   # Show all columns
 pd.set_option('display.width', None)         # No limit on display width
 pd.set_option('display.max_colwidth', None)  # Don't truncate column contents
 
+# Create label column for wide format
+df_songs['label'] = df_songs['Song'] + '_'  + df_songs['Appointment'].astype(str) + '-' +  df_songs['Attempt'].astype(str)
+
+# Pivot to get one row per participant
+df_pivot = df_songs.pivot(index='Participant_ID', columns='label', values='Score')
+
+# Optional: Reset index for a flat DataFrame
+df_pivot.reset_index(inplace=True)
+
 print(df_songs)
+# print(df_pivot)
+
+# With ID included
+blues_with_id = df_pivot[['Participant_ID'] + [col for col in df_pivot.columns if col.startswith('Blues')]]
+blues_filtered = blues_with_id.dropna(subset=['Blues_1-1'])
+stueck_with_id = df_pivot[['Participant_ID'] + [col for col in df_pivot.columns if col.startswith('Stück')]]
+stueck_filtered = stueck_with_id.dropna(subset=['Stück_1-1'])
+
+print(blues_filtered)
+print(stueck_filtered)
+
 
 print(f"\nTotal MIDI files loaded (excluding 'Finger'): {len(midi_data_list)}")
 
