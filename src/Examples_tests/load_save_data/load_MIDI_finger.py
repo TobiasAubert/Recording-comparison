@@ -30,7 +30,7 @@ for dirpath, dirnames, filenames in os.walk(root_folder):
                     instrument.notes = [note for note in instrument.notes if note.start <= 30.0]
 
                 # Your expected pattern (adjust to match what they were supposed to play)
-                expected_sequence = ['F4', 'C4', 'E4', 'D4']
+                expected_sequence = ['F4', 'C4', 'E4', 'D4', 'F4']
                 sequence_len = len(expected_sequence)
 
                 # Extract played notes (non-drum, sorted by start time)
@@ -79,7 +79,7 @@ df_finger['label'] = df_finger['Song'] + '_'  + df_finger['Appointment'].astype(
 # Pivot to get one row per participant
 df_correct = df_finger.pivot(index='Participant_ID', columns='label', values='Correct_Sequences')
 df_keys = df_finger.pivot(index='Participant_ID', columns='label', values='Keystrokes')
-df_ratio = df_correct / df_keys
+df_ratio = df_correct * 5 / df_keys
 
 # rename columns for clarity
 df_correct.columns = [f"{col}_correct" for col in df_correct.columns]
@@ -90,6 +90,9 @@ df_ratio.columns = [f"{col}_ratio" for col in df_ratio.columns]
 #combine the dataframes
 df_combined = pd.concat([df_correct, df_keys, df_ratio], axis=1)
 df_combined.reset_index(inplace=True)
+
+
+df_combined.to_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/fingergeschicklichkeit.csv", index=False)
 
 # print(df_finger)
 print(df_combined)

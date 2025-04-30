@@ -1,0 +1,27 @@
+klassisch  = 1 AR = 2
+id, einteilung
+AA10MA	Klassisch
+BE01CL	AR
+BE13NA	Klassisch
+BE17MA	AR
+BI21FL	Klassisch
+BU01FR	Klassisch
+DA27SV	Klassisch
+DI03CA	AR
+FO09MA	AR
+GE03KA	AR
+GI16CA	AR
+JE13CL	Klassisch
+LU03GA	Klassisch
+SU13BA	Klassisch
+SU22PA	AR
+VA10SI	Klassisch
+WA24AN	AR
+ZU17AL	AR
+
+
+
+
+
+
+

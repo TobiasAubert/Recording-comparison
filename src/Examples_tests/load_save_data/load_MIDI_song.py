@@ -4,6 +4,10 @@ import pandas as pd
 import numpy as np
 from dtw import dtw
 
+
+# save_path = "C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/blue_score.csv"
+# save_path = "C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/risingsun_score.csv"
+
 def extract_onsets(midi_file):
     """
     Loads a MIDI file and extracts a sorted numpy array of note onset times
@@ -51,7 +55,8 @@ for dirpath, dirnames, filenames in os.walk(root_folder):
                         reference_midi = rising_sun_rechts
                     else:
                         reference_midi = rising_sun
-
+                
+                
                 performance_midi = file_path
 
                 # Extract note onsets
@@ -116,9 +121,8 @@ blues_filtered = blues_with_id.dropna(subset=['Blues_1-1'])
 stueck_with_id = df_pivot[['Participant_ID'] + [col for col in df_pivot.columns if col.startswith('Stück')]]
 stueck_filtered = stueck_with_id.dropna(subset=['Stück_1-1'])
 
-print(blues_filtered)
-print(stueck_filtered)
-
+blues_filtered.to_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/blues_score.csv", index=False)
+stueck_filtered.to_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/risingsun_score.csv", index=False)
 
 print(f"\nTotal MIDI files loaded (excluding 'Finger'): {len(midi_data_list)}")
 
