@@ -5,6 +5,7 @@ from scipy.stats import zscore
 from scipy.stats import shapiro
 from scipy.stats import mannwhitneyu
 from scipy.stats import ttest_ind
+from scipy import stats
 
 
 df_finger = pd.read_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/fingergeschicklichkeit.csv")
@@ -212,8 +213,81 @@ def check_normality_shapiro(df, group_name=""):
         stat, p = shapiro(df_numeric[col])
         print(f"{group_name} - {col}: W={stat:.3f}, p={p:.3f} {'(Not normal)' if p < 0.05 else '(Normal)'}")
 
+def grubbs_test(values, alpha=0.05):
+    """
+    Applies one-sided Grubbs' test for a single outlier.
+    Returns the index of the outlier, or None if no outlier is found.
+    """
+    n = len(values)
+    if n < 3:
+        return None
+
+    mean_y = np.mean(values)
+    std_y = np.std(values, ddof=1)
+    abs_diffs = np.abs(values - mean_y)
+    max_dev_idx = abs_diffs.idxmax()
+    G_calculated = abs_diffs[max_dev_idx] / std_y
+
+    # Critical value from Grubbs' distribution
+    t_crit = stats.t.ppf(1 - alpha / (2 * n), n - 2)
+    G_critical = ((n - 1) / np.sqrt(n)) * np.sqrt(t_crit**2 / (n - 2 + t_crit**2))
+
+    if G_calculated > G_critical:
+        return max_dev_idx
+    else:
+        return None
+
+def replace_outliers_with_nan(raw_df, summary_df, alpha=0.05, verbose=False):
+    """
+    Replaces outlier values with NaN in raw_df, based on normality info from summary_df.
+    Uses Grubbs' test for normal variables, IQR method otherwise.
+    
+    Parameters:
+    - raw_df: original data with numeric columns and 'Participant_ID'
+    - summary_df: DataFrame with index = variable names and a 'Normality' column
+    - alpha: significance level for Grubbs test (default 0.05)
+    - verbose: if True, prints which values were set to NaN
+    """
+    df_clean = raw_df.copy()
+    df_clean.set_index("Participant_ID", inplace=True)
+    numeric_cols = df_clean.select_dtypes(include=np.number).columns
+
+    for col in numeric_cols:
+        if col not in summary_df.index:
+            continue
+        
+        values = df_clean[col].dropna()
+        if len(values) < 3:
+            continue  # Not enough data to test
+        
+        p_normal = summary_df.loc[col, "Normality"]
+        is_normal = p_normal > 0.05
+
+        if is_normal:
+            # Grubbs test
+            outlier_idx = grubbs_test(values, alpha=alpha)
+            if outlier_idx is not None:
+                df_clean.loc[outlier_idx, col] = np.nan
+                if verbose:
+                    print(f"[Grubbs] Outlier in '{col}' at participant {outlier_idx} set to NaN")
+        else:
+            # IQR method
+            Q1 = values.quantile(0.25)
+            Q3 = values.quantile(0.75)
+            IQR = Q3 - Q1
+            lower = Q1 - 1.5 * IQR
+            upper = Q3 + 1.5 * IQR
+            outlier_mask = (values < lower) | (values > upper)
+            for idx in values.index[outlier_mask]:
+                df_clean.loc[idx, col] = np.nan
+                if verbose:
+                    print(f"[IQR] Outlier in '{col}' at participant {idx} set to NaN")
+
+    df_clean.reset_index(inplace=True)
+    return df_clean
 
 # ----------- prepare data and clean --------------
+
 # Convert to dictionary
 category_dict = dict(line.split() for line in category_list.strip().split('\n'))
 
@@ -222,33 +296,47 @@ df_finger['Category'] = df_finger[df_finger.columns[0]].map(category_dict)
 df_sun['Category'] = df_sun[df_sun.columns[0]].map(category_dict)
 df_blues['Category'] = df_blues[df_blues.columns[0]].map(category_dict)
 
+# raw split into seperate groups
+df_finger_klassisch_raw = df_finger[df_finger['Category'] == 'Klassisch']
+df_finger_ar_raw = df_finger[df_finger['Category'] == 'AR']
+df_finger_combined_raw = pd.concat([df_finger_klassisch_raw, df_finger_ar_raw], axis=0)
+df_sun_klassisch_raw = df_sun[df_sun['Category'] == 'Klassisch']
+df_sun_ar_raw = df_sun[df_sun['Category'] == 'AR']
+df_blues_klassisch_raw = df_blues[df_blues['Category'] == 'Klassisch']
+df_blues_ar_raw = df_blues[df_blues['Category'] == 'AR']
+
 # remove contestants that did not complete the study
 df_finger = df_finger[df_finger['Category'].notna()]
 df_sun = df_sun[df_sun['Category'].notna()]
 df_blues = df_blues[df_blues['Category'].notna()]
 
 print(df_finger)
-print(df_sun)
-print(df_blues)
-
-# remove outliers using z-score method
-df_finger = remove_outliers_z(df_finger)
-df_sun = remove_outliers_z(df_sun)
-df_blues = remove_outliers_z(df_blues)
 
 ##-----------analyze finger dexterity-------------------##
 # separate the data into two groups based on the category
 df_finger_klassisch = df_finger[df_finger['Category'] == 'Klassisch']
 df_finger_ar = df_finger[df_finger['Category'] == 'AR']
+df_finger_combined = pd.concat([df_finger_klassisch, df_finger_ar], axis=0)
 
 # calculate the mean, standard deviation, standard error and confidence interval for each group
 df_finger_summary_klassisch = analyze_scores(df_finger_klassisch)
 df_finger_summary_ar = analyze_scores(df_finger_ar)
+df_finger_summary_combined = analyze_scores(df_finger_combined)
+
+print(df_finger_summary_combined)
+
+# remove outliers using Grubbs test and IQR method
+
+
+
+df_finger_combinded_clean = replace_outliers_with_nan(df_finger_combined_raw, df_finger_summary_combined, alpha=0.05, verbose=True)
+df_finger_klassisch_clean = replace_outliers_with_nan(df_finger_klassisch_raw, df_finger_summary_klassisch, alpha=0.05, verbose=True)
+df_finger_ar_clean = replace_outliers_with_nan(df_finger_ar_raw, df_finger_summary_ar, alpha=0.05, verbose=True)
     
 # test for statistical significance
 df_finger_ttest_summary = ttest(df_finger_summary_klassisch, df_finger_summary_ar)
 df_finger_analysis = auto_stat_test_from_summary(df_finger_summary_klassisch, df_finger_summary_ar, df_finger_klassisch, df_finger_ar)
-
+df_finger_analysis_clean = auto_stat_test_from_summary(df_finger_summary_klassisch, df_finger_summary_ar, df_finger_klassisch_clean, df_finger_ar_clean)
 
 
 ##-----------analyze songscore House of the Rising Sun -------------------##
@@ -259,12 +347,13 @@ df_sun_ar = df_sun[df_sun['Category'] == 'AR']
 df_sun_summary_klassisch = analyze_scores(df_sun_klassisch)
 df_sun_summary_ar = analyze_scores(df_sun_ar)
 
-print(df_sun_summary_klassisch)
-print(df_sun_summary_ar)
+df_sun_klassisch_clean = replace_outliers_with_nan(df_sun_klassisch_raw, df_sun_summary_klassisch, alpha=0.05, verbose=True)
+df_sun_ar_clean = replace_outliers_with_nan(df_sun_ar_raw, df_sun_summary_ar, alpha=0.05, verbose=True)
 
 # test for statistical significance
 df_sun_ttest_summary = ttest(df_sun_summary_klassisch, df_sun_summary_ar)
 df_sun_analysis = auto_stat_test_from_summary(df_sun_summary_klassisch, df_sun_summary_ar, df_sun_klassisch, df_sun_ar)
+df_sun_analysis_clean = auto_stat_test_from_summary(df_sun_summary_klassisch, df_sun_summary_ar, df_sun_klassisch_clean, df_sun_ar_clean)
 
 
 ##-----------analyze songscore Blues NO1 -------------------##
@@ -275,9 +364,13 @@ df_blues_ar = df_blues[df_blues['Category'] == 'AR']
 df_blues_summary_klassisch = analyze_scores(df_blues_klassisch)
 df_blues_summary_ar = analyze_scores(df_blues_ar)
 
+df_blues_klassisch_clean = replace_outliers_with_nan(df_blues_klassisch_raw, df_blues_summary_klassisch, alpha=0.05, verbose=True)
+df_blues_ar_clean = replace_outliers_with_nan(df_blues_ar_raw, df_blues_summary_ar, alpha=0.05, verbose=True)
+
 # test for statistical significance
 df_blues_ttest_summary = ttest(df_blues_summary_klassisch, df_blues_summary_ar)
 df_blues_analysis = auto_stat_test_from_summary(df_blues_summary_klassisch, df_blues_summary_ar, df_blues_klassisch, df_blues_ar)
+df_blues_analysis_clean = auto_stat_test_from_summary(df_blues_summary_klassisch, df_blues_summary_ar, df_blues_klassisch_clean, df_blues_ar_clean)
 
 
 
@@ -285,14 +378,17 @@ df_blues_analysis = auto_stat_test_from_summary(df_blues_summary_klassisch, df_b
 # print(df_finger_summary_klassisch)
 # print(df_finger_summary_ar)
 # print(df_finger_ttest_summary)
-print(df_finger_analysis)
+# print(df_finger_analysis)
+print(df_finger_analysis_clean)
 
 # print(df_sun_summary_klassisch)
 # print(df_sun_summary_ar)
 # print(df_sun_ttest_summary)
-print(df_sun_analysis)
+# print(df_sun_analysis)
+print(df_sun_analysis_clean)
 
 # print(df_blues_summary_klassisch)
 # print(df_blues_summary_ar)
 # print(df_blues_ttest_summary)
-print(df_blues_analysis)
+# print(df_blues_analysis)
+print(df_blues_analysis_clean)
