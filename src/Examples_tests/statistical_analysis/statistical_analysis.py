@@ -6,15 +6,19 @@ from scipy.stats import shapiro
 from scipy.stats import mannwhitneyu
 from scipy.stats import ttest_ind
 from scipy import stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import seaborn as sns
+import matplotlib.pyplot as plt  
+import math
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-
-df_finger = pd.read_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/fingergeschicklichkeit.csv")
-df_sun = pd.read_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/risingsun_score.csv")
-df_blues = pd.read_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/blues_score.csv")
+df_finger = pd.read_csv("src/Examples_tests/Data/fingergeschicklichkeit.csv")
+df_sun = pd.read_csv("src/Examples_tests/Data/risingsun_score.csv")
+df_blues = pd.read_csv("src/Examples_tests/Data/blues_score.csv")
 
 
 # add groupe column to the dataframes
-
 # Sample category list as a string
 category_list = """
 AA10MA Klassisch
@@ -310,9 +314,15 @@ df_finger = df_finger[df_finger['Category'].notna()]
 df_sun = df_sun[df_sun['Category'].notna()]
 df_blues = df_blues[df_blues['Category'].notna()]
 
-print(df_finger)
+# JE13CL is a special case, played wrong sequence therefore just take the his played sequence calculated in saving_JE13CL.py
+Finger_1_1_correct = 16
+Finger_1_2_correct = 26
 
-##-----------analyze finger dexterity-------------------##
+df_finger.loc[df_finger['Participant_ID'] == 'JE13CL', 'Finger_1-1_correct'] = Finger_1_1_correct
+df_finger.loc[df_finger['Participant_ID'] == 'JE13CL', 'Finger_1-2_correct'] = Finger_1_2_correct
+
+
+
 # separate the data into two groups based on the category
 df_finger_klassisch = df_finger[df_finger['Category'] == 'Klassisch']
 df_finger_ar = df_finger[df_finger['Category'] == 'AR']
@@ -340,6 +350,8 @@ df_finger_analysis_clean = auto_stat_test_from_summary(df_finger_summary_klassis
 
 
 ##-----------analyze songscore House of the Rising Sun -------------------##
+print(df_sun)
+
 df_sun_klassisch = df_sun[df_sun['Category'] == 'Klassisch']
 df_sun_ar = df_sun[df_sun['Category'] == 'AR']
 
@@ -379,16 +391,20 @@ df_blues_analysis_clean = auto_stat_test_from_summary(df_blues_summary_klassisch
 # print(df_finger_summary_ar)
 # print(df_finger_ttest_summary)
 # print(df_finger_analysis)
-print(df_finger_analysis_clean)
+# print(df_finger_analysis_clean)
 
 # print(df_sun_summary_klassisch)
 # print(df_sun_summary_ar)
 # print(df_sun_ttest_summary)
 # print(df_sun_analysis)
-print(df_sun_analysis_clean)
+# print(df_sun_analysis_clean)
 
 # print(df_blues_summary_klassisch)
 # print(df_blues_summary_ar)
 # print(df_blues_ttest_summary)
 # print(df_blues_analysis)
-print(df_blues_analysis_clean)
+# print(df_blues_analysis_clean)
+
+
+
+

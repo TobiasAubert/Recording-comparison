@@ -42,6 +42,9 @@ for dirpath, dirnames, filenames in os.walk(root_folder):
                             name = pretty_midi.note_number_to_name(note.pitch)
                             played_notes.append(name)
 
+                        if (participant_id == "JE13CL"):
+                            print(f"Played notes for {participant_id}: {played_notes}")
+
                 # Count correct sequences using a sliding window
                 correct_sequences = 0
                 for i in range(len(played_notes) - sequence_len + 1):
