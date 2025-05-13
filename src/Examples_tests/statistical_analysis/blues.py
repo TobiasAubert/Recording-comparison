@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import math
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-df_sun = pd.read_csv("src/Examples_tests/Data/risingsun_score.csv")
+df_blues = pd.read_csv("src/Examples_tests/Data/blues_score.csv")
 
 
 # add groupe column to the dataframes
@@ -45,25 +45,25 @@ ZU17AL AR
 category_dict = dict(line.split() for line in category_list.strip().split('\n'))
 
 # Convert the dictionary to a DataFrame
-df_sun['Category'] = df_sun[df_sun.columns[0]].map(category_dict)
+df_blues['Category'] = df_blues[df_blues.columns[0]].map(category_dict)
 
 # remove contestants that did not complete the study
-df_sun = df_sun[df_sun['Category'].notna()]
+df_blues = df_blues[df_blues['Category'].notna()]
 
 
 # ------------ statistical analysis ----------------
 # mean, std, min, max, count
-df_stats = (df_sun.groupby('Category').describe())
+df_stats = (df_blues.groupby('Category').describe())
 
 # Group means
-group_means = df_sun.groupby("Category").mean(numeric_only=True).T
+group_means = df_blues.groupby("Category").mean(numeric_only=True).T
 
 #Correlation matrix
 # Only Stück columns
-stueck_cols = [col for col in df_sun.columns if "Stück" in col]
+stueck_cols = [col for col in df_blues.columns if "Blues" in col]
 
 # Correlation matrix
-corr = df_sun[stueck_cols].corr()
+corr = df_blues[stueck_cols].corr()
 
 
 # -------------print / plot-----------------
