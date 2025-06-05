@@ -12,6 +12,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt  
 import math
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
+import os
 
 
 df_finger = pd.read_csv("src/Examples_tests/Data/fingergeschicklichkeit.csv")
@@ -106,16 +107,19 @@ axes = axes.flatten()  # Flatten in case of multi-row layout
 for i, col in enumerate(cols):
     ax = axes[i]
     sns.boxplot(x='Category', y=col, data=df_finger_clean, ax=ax)
-    sns.stripplot(x='Category', y=col, data=df_finger_clean, color='black', size=4, jitter=True, ax=ax)
-    ax.set_title(f'{col} by Category')
-    ax.set_xlabel('')
-    ax.tick_params(axis='x', rotation=45)
-    
+    sns.stripplot(x='Category', y=col, data=df_finger_clean, color='black', size=6, jitter=True, ax=ax)
+    ax.set_title(f'{col} by Category', fontsize=16)
+    ax.set_xlabel('', fontsize=16)
+    ax.set_ylabel('correct sequences', fontsize=14)
+
+    ax.tick_params(axis='x', labelsize=16, rotation=45)
+    ax.tick_params(axis='y', labelsize=16)
+
     # Set y-axis limits
     if 'correct' in col:
-        ax.set_ylim(5, 30)
+        ax.set_ylim(3, 35)
     elif 'keys' in col:
-        ax.set_ylim(60, 180)
+        ax.set_ylim(50, 180)
 
 # Remove empty subplots
 for j in range(i + 1, len(axes)):
@@ -123,3 +127,54 @@ for j in range(i + 1, len(axes)):
 
 plt.tight_layout()
 plt.show()
+
+# Save each boxplot individually
+
+# Define output path
+output_dir = r"C:\Users\tobia\OneDrive\AA Uni\ISPW_Erlacher\Bacherlorarbeit\Verschriftlichung\Grafiken"
+
+# Ensure directory exists
+os.makedirs(output_dir, exist_ok=True)
+
+# Save each boxplot individually
+for col in cols:
+    fig, ax = plt.subplots(figsize=(6, 5))
+    sns.boxplot(x='Category', y=col, data=df_finger_clean, ax=ax)
+    sns.stripplot(x='Category', y=col, data=df_finger_clean, color='black', size=4, jitter=True, ax=ax)
+
+    # Title and axis formatting
+    ax.set_title(f'{col} by Category', fontsize=16)
+    ax.set_xlabel('')
+    
+    # Set custom y-label
+    if col == 'Finger_1_1_correct':
+        ax.set_ylabel('Correct Sequences', fontsize=14)
+    elif col == 'Finger_1_2_correct':
+        ax.set_ylabel('Correct Sequences', fontsize=14)
+    elif col == 'Finger_5_1_correct':
+        ax.set_ylabel('Correct Sequences', fontsize=14)
+    elif col == 'Finger_5_2_correct':
+        ax.set_ylabel('Correct Sequences', fontsize=14)
+    elif 'keys' in col:
+        ax.set_ylabel('Key Presses', fontsize=14)
+    else:
+        ax.set_ylabel(col.replace('_', ' ').title(), fontsize=14)
+
+    # Axis ticks
+    ax.tick_params(axis='x', labelsize=12, rotation=45)
+    ax.tick_params(axis='y', labelsize=12)
+
+    # Set y-limits
+    if col in ['Finger_5_1_correct', 'Finger_5_2_correct']:  # the top-right ones
+        ax.set_ylim(10, 35)
+    elif 'correct' in col:
+        ax.set_ylim(5, 30)
+    elif 'keys' in col:
+        ax.set_ylim(60, 180)
+
+    # Save figure
+    filename = f"{col}.png"
+    filepath = os.path.join(output_dir, filename)
+    plt.tight_layout()
+    plt.savefig(filepath, dpi=300)
+    plt.close(fig)

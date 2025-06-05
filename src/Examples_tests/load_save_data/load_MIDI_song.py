@@ -36,7 +36,7 @@ def extract_onsets_and_pitches(midi_file):
 
 
 
-# Change this to your actual folder path
+
 root_folder = r'C:\Users\tobia\OneDrive - Universitaet Bern\25FS_BSc_AubertTobias_ARPiano\12_Rohdaten'
 
 # List to collect loaded MIDI data
@@ -45,6 +45,34 @@ data = []
 rising_sun = "C:/Users/tobia/OneDrive - Universitaet Bern/25FS_BSc_AubertTobias_ARPiano/12_Rohdaten/House of the Rising Sun.mid"
 rising_sun_rechts = "C:/Users/tobia/OneDrive - Universitaet Bern/25FS_BSc_AubertTobias_ARPiano/12_Rohdaten/Rechts House of the Rising Sun.mid"
 blues = "C:/Users/tobia/OneDrive - Universitaet Bern/25FS_BSc_AubertTobias_ARPiano/12_Rohdaten/Blues No1.mid"
+
+# Your category list as a dictionary
+category_list = """
+AA10MA Klassisch
+BE01CL AR
+BE13NA Klassisch
+BE17MA AR
+BI21FL Klassisch
+BU01FR Klassisch
+DA27SV Klassisch
+DI03CA AR
+FO09MA AR
+GE03KA AR
+GI16CA AR
+JE13CL Klassisch
+LU03GA Klassisch
+SU13BA Klassisch
+SU22PA AR
+VA10SI Klassisch
+WA24AN AR
+ZU17AL AR
+"""
+
+category_dict = {
+    line.split()[0]: line.split()[1]
+    for line in category_list.strip().split('\n')
+}
+
 
 # Walk through all subfolders
 for dirpath, dirnames, filenames in os.walk(root_folder):
@@ -80,7 +108,10 @@ for dirpath, dirnames, filenames in os.walk(root_folder):
                 
                 
                 performance_midi = file_path
-
+                
+                # returns the time (in seconds) of the last event in the MIDI file
+                playtime = pretty_midi.PrettyMIDI(file_path).get_end_time()
+                
                 # Extract note onsets
                 ref_onsets = extract_onsets(reference_midi)
                 perf_onsets = extract_onsets(performance_midi)
@@ -110,6 +141,8 @@ for dirpath, dirnames, filenames in os.walk(root_folder):
                 pitch_alignment = dtw(ref_pitch_res, perf_pitch_res)
                 score_pitch = pitch_alignment.distance
 
+                # Get category (Klassisch or AR)
+                category = category_dict.get(participant_id, None)
 
             
                 # prepare the data for DataFrame
@@ -120,6 +153,8 @@ for dirpath, dirnames, filenames in os.walk(root_folder):
                     'Attempt': attempt,
                     'Score': score,
                     'Score pitch': score_pitch,
+                    'playtime': playtime,
+                    'Category': category
                 }
                 data.append(info)
 
@@ -163,6 +198,41 @@ stueck_filtered = stueck_with_id.dropna(subset=['Stück_1-1'])
 
 blues_filtered.to_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/blues_score2.csv", index=False)
 stueck_filtered.to_csv("C:/Users/tobia/Desktop/Recording-comparison/src/Examples_tests/Data/risingsun_score2.csv", index=False)
+
+
+# # Mean and max playtime where Song == 'Blues'
+# blues_stats = df_songs[df_songs['Song'] == 'Blues']['playtime'].agg(['mean', 'max'])
+
+# # Mean and max playtime where Song == 'Stück'
+# stueck_stats = df_songs[df_songs['Song'] == 'Stück']['playtime'].agg(['mean', 'max'])
+
+# print("Blues - Mean and Max Playtime:")
+# print(blues_stats)
+
+# print("\nStück - Mean and Max Playtime:")
+# print(stueck_stats)
+
+
+# Ensure Appointment is treated as integer
+df_songs['Appointment'] = df_songs['Appointment'].astype(int)
+
+# Now the filtering will work
+blues_stats = df_songs[
+    (df_songs['Song'] == 'Blues') & (df_songs['Appointment'] == 1)
+]['playtime'].agg(['mean', 'max'])
+
+stueck_stats = df_songs[
+    (df_songs['Song'] == 'Stück') & (df_songs['Appointment'] == 1) & (df_songs['Category'] == 'Klassisch')
+]['playtime'].agg(['mean', 'max'])
+
+print("Blues stats (Appointment 1):")
+print(blues_stats)
+
+print("\nStück stats (Appointment 1):")
+print(stueck_stats)
+
+
+
 
 print(f"\nTotal MIDI files loaded (excluding 'Finger'): {len(midi_data_list)}")
 
