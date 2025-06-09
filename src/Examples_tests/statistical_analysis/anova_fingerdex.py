@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import math
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 import os
-
+from scipy.stats import ttest_rel
 
 df_finger = pd.read_csv("src/Examples_tests/Data/fingergeschicklichkeit.csv")
 
@@ -57,9 +57,19 @@ Finger_1_2_correct = 26
 df_finger.loc[df_finger['Participant_ID'] == 'JE13CL', 'Finger_1-1_correct'] = Finger_1_1_correct
 df_finger.loc[df_finger['Participant_ID'] == 'JE13CL', 'Finger_1-2_correct'] = Finger_1_2_correct
 
-# Anovatest
+
+
+
+## Anovatest
 
 df_finger_clean = df_finger.rename(columns=lambda x: x.replace('-', '_'))
+
+# ttest
+# T-Test
+klassisch = df_finger_clean[df_finger_clean['Category'] == 'Klassisch']
+t_stat, p_val = ttest_rel(klassisch['Finger_1_1_correct'], klassisch['Finger_5_1_correct'])
+print(f"Klassische Gruppe Pre vs. Post: p = {p_val:.4f}")
+print(f"t(8) = {t_stat:.2f}")
 
 # List of columns to test
 cols_to_test = [col for col in df_finger_clean.columns if ('correct' in col or 'keys' in col)]
@@ -67,15 +77,30 @@ cols_to_test = [col for col in df_finger_clean.columns if ('correct' in col or '
 # Run ANOVA for each and collect significant columns
 significant_cols = []
 for col in cols_to_test:
+    print(f"\n--- Prüfung: {col} ---")
+    
+    # Normalverteilung je Gruppe
+    for group in df_finger_clean['Category'].unique():
+        stat, p = shapiro(df_finger_clean[df_finger_clean['Category'] == group][col])
+        print(f"Shapiro-Wilk für {group}: p = {p:.4f}")
+    
+    # ANOVA
     model = smf.ols(f'{col} ~ C(Category)', data=df_finger_clean).fit()
     anova = sm.stats.anova_lm(model, typ=2)
     p_value = anova['PR(>F)'][0]
-    print(f"ANOVA for {col}: p = {p_value:.4f}")
+    print(f"ANOVA: p = {p_value:.4f}")
+    
     if p_value < 0.05:
-        print("  → Significant! Adding to Tukey HSD plots...")
-        significant_cols.append(col)
+        print(" → Signifikanter Unterschied! (ANOVA)")
+        # Optional: Post-hoc schon erledigt durch Tukey
     else:
-        print("  → Not significant, skipping Tukey.")
+        # Wenn ANOVA nicht signifikant oder Normalverteilung fraglich
+        # prüfe zusätzlich Mann-Whitney
+        group1 = df_finger_clean[df_finger_clean['Category'] == 'Klassisch'][col]
+        group2 = df_finger_clean[df_finger_clean['Category'] == 'AR'][col]
+        stat, p_mwu = mannwhitneyu(group1, group2, alternative='two-sided')
+        print(f"Mann-Whitney-U-Test: p = {p_mwu:.4f}")
+
 
 
 # Plot all Tukey HSD results in one figure

@@ -5,6 +5,7 @@ from scipy.stats import zscore
 from scipy.stats import shapiro
 from scipy.stats import mannwhitneyu
 from scipy.stats import ttest_ind
+from scipy.stats import ttest_rel
 from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
@@ -13,6 +14,8 @@ import matplotlib.pyplot as plt
 import math
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+
 
 df_blues = pd.read_csv("src/Examples_tests/Data/blues_score2.csv")
 
@@ -51,6 +54,9 @@ df_blues['Category'] = df_blues[df_blues.columns[0]].map(category_dict)
 # remove contestants that did not complete the study
 df_blues = df_blues[df_blues['Category'].notna()]
 
+df_blues_klassisch = df_blues[df_blues['Category'] == 'Klassisch']
+print(df_blues_klassisch)
+
 
 # ------------ statistical analysis ----------------
 # mean, std, min, max, count
@@ -65,6 +71,56 @@ stueck_cols = [col for col in df_blues.columns if "Blues" in col]
 
 # Correlation matrix
 corr = df_blues[stueck_cols].corr()
+
+## spielen ar beim 3. termin signifikant besser als beim 1. termin?
+# Nur Daten der AR-Gruppe auswählen
+ar_data = df_blues[df_blues['Category'] == 'AR']
+klassisch_data = df_blues[df_blues['Category'] == 'Klassisch']
+
+# Termin 1 (HotRS_1-1) vs. Termin 3 (z. B. HotRS_3-2 oder 3-1?)
+# Du musst entscheiden, ob du 3-1 oder 3-2 verwenden möchtest (z. B. 3-2 als "bessere" Nach-Messung)
+
+t_stat, p_value = ttest_rel(ar_data['Blues_1-1'], ar_data['Blues_5-2'])
+print("AR")
+print(f"t({len(ar_data)-1}) = {t_stat:.2f}, p = {p_value:.4f}")
+
+print("Klassisch")
+t_stat_klassisch, p_value_klassisch = ttest_rel(klassisch_data['Blues_1-1'], klassisch_data['Blues_5-1'])
+print(f"t({len(klassisch_data)-1}) = {t_stat_klassisch:.2f}, p = {p_value_klassisch:.4f}")
+
+## test for significant differences between the two groups at all points
+# --- Signifikanztests pro Termin: Klassisch vs. AR ---
+results = []
+
+for col in stueck_cols:
+    data_klassisch = klassisch_data[col].dropna()
+    data_ar = ar_data[col].dropna()
+
+    # Normalverteilung prüfen
+    stat_klass, p_klass = shapiro(data_klassisch)
+    stat_ar, p_ar = shapiro(data_ar)
+
+    normal_klass = p_klass > 0.05
+    normal_ar = p_ar > 0.05
+
+    if normal_klass and normal_ar:
+        # t-Test, falls beide normalverteilt
+        test_stat, p_val = ttest_ind(data_klassisch, data_ar, equal_var=False)
+        test_type = "t-Test"
+    else:
+        # Mann-Whitney U-Test bei nicht-normalverteilten Daten
+        test_stat, p_val = mannwhitneyu(data_klassisch, data_ar, alternative='two-sided')
+        test_type = "Mann-Whitney-U"
+
+    results.append({
+        "Messzeitpunkt": col,
+        "Testtyp": test_type,
+        "p-Wert": round(p_val, 4),
+        "Signifikant (p < 0.05)": "Ja" if p_val < 0.05 else "Nein"
+    })
+
+results_df = pd.DataFrame(results)
+print(results_df)
 
 
 # -------------print / plot-----------------
@@ -139,10 +195,10 @@ for category in ["Klassisch", "AR"]:
 
 ax.set_xticks(x_vals)
 ax.set_xticklabels(stueck_cols, rotation=45)
-ax.set_xlabel("Stück")
-ax.set_ylabel("Durchschnittliche Punktzahl")
-ax.set_title("Leistung nach Stück mit 95%-Konfidenzintervallen")
-ax.legend(title="Gruppe", loc='upper left', bbox_to_anchor=(0.1, 0.99))
+ax.set_xlabel("Blues No. 1", fontsize=14)
+ax.set_ylabel("Durchschnittliche Punktzahl", fontsize=14)
+ax.set_title("Leistung nach Stück mit 95%-Konfidenzintervallen", fontsize=16)
+ax.legend(title="Gruppe", loc='upper left', bbox_to_anchor=(0.1, 0.99), fontsize=14)
 ax.grid(True)
 
 # --- inset axes ---
@@ -176,8 +232,8 @@ for category in ["Klassisch", "AR"]:
 # Customize inset axes
 inset_ax.set_xticks([x_positions[col] for col in ['Blues_4-1', 'Blues_4-2', 'Blues_5-1', 'Blues_5-2']])
 inset_ax.set_xticklabels(['Blues_4-1', 'Blues_4-2', 'Blues_5-1', 'Blues_5-2'], rotation=45)
-inset_ax.set_ylim(bottom=0)  # Optional: adjust zoom level
-inset_ax.set_title("Zoom: Stück 4 & 5", fontsize=10)
+inset_ax.set_ylim(bottom=-1000)  # Optional: adjust zoom level
+inset_ax.set_title("Zoom: Blues No. 1 4 & 5", fontsize=14)
 inset_ax.grid(True)
 
 plt.tight_layout()
