@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 import math
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-df_finger = pd.read_csv("src/Examples_tests/Data/fingergeschicklichkeit.csv")
-df_sun = pd.read_csv("src/Examples_tests/Data/risingsun_score.csv")
-df_blues = pd.read_csv("src/Examples_tests/Data/blues_score.csv")
+df_finger = pd.read_csv("src/data_analysis_pipeline/Data/fingergeschicklichkeit.csv")
+df_sun = pd.read_csv("src/data_analysis_pipeline/Data/risingsun_score.csv")
+df_blues = pd.read_csv("src/data_analysis_pipeline/Data/blues_score.csv")
 
 
 # add groupe column to the dataframes

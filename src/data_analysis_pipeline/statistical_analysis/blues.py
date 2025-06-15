@@ -17,7 +17,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 
-df_blues = pd.read_csv("src/Examples_tests/Data/blues_score2.csv")
+df_blues = pd.read_csv("src/data_analysis_pipeline/Data/blues_score2.csv")
 
 
 # add groupe column to the dataframes

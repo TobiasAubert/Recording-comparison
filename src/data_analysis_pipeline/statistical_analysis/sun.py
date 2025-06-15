@@ -17,7 +17,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.stats import shapiro
 
 
-df_sun = pd.read_csv("src/Examples_tests/Data/risingsun_score2.csv")
+df_sun = pd.read_csv("src/data_analysis_pipeline/Data/risingsun_score2.csv")
 df_sun.rename(columns={col: col.replace("Stück", "HotRS") for col in df_sun.columns if col.startswith("Stück")}, inplace=True)
 print(df_sun.head())
 

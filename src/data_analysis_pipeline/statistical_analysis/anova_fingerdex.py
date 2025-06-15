@@ -15,7 +15,7 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 import os
 from scipy.stats import ttest_rel
 
-df_finger = pd.read_csv("src/Examples_tests/Data/fingergeschicklichkeit.csv")
+df_finger = pd.read_csv("src/data_analysis_pipeline/Data/fingergeschicklichkeit.csv")
 
 
 # add groupe column to the dataframes
